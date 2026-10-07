@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
 import Logo from "./Logo";
-import { LogOut, Menu, X, Search, Terminal, ExternalLink, Trophy, Users, Briefcase, LayoutDashboard } from "lucide-react";
+import { LogOut, Menu, X, Search, Terminal, ExternalLink, Trophy, Users, Briefcase, LayoutDashboard, User } from "lucide-react";
 
 export default function Navbar({ onOpenLegal, onOpenSearch, onNavigate }) {
   const { user, isLoggedIn, logout, openAuthModal } = useAuth();
@@ -289,6 +289,32 @@ export default function Navbar({ onOpenLegal, onOpenSearch, onNavigate }) {
                           {user?.email}
                         </div>
                       </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onNavigate?.("profile");
+                          setUserMenuOpen(false);
+                        }}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "10px",
+                          padding: "10px 16px",
+                          fontSize: "0.8125rem",
+                          color: "var(--on-surface)",
+                          cursor: "pointer",
+                          textAlign: "left",
+                          background: "none",
+                          border: "none",
+                          transition: "background 0.15s",
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-subtle)"}
+                        onMouseLeave={(e) => e.currentTarget.style.background = "none"}
+                      >
+                        <User size={15} color="var(--primary)" />
+                        <span>Profile & Settings</span>
+                      </button>
 
                       <button
                         type="button"

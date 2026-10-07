@@ -133,6 +133,9 @@ export const authApi = {
   
   // Fetch currently authenticated user profile
   getMe: () => apiClient.get("/auth/me/"),
+
+  // Update authenticated user profile details (displayName, email)
+  updateProfile: (payload) => apiClient.patch("/auth/me/", payload),
 };
 
 // ── 6. User Plans API Endpoints ─────────────────────────────────────────────

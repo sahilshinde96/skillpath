@@ -16,6 +16,7 @@ import LessonPlayer from "./pages/LessonPlayer";
 import Leaderboard from "./pages/Leaderboard";
 import SquadPage from "./pages/SquadPage";
 import Portfolio from "./pages/Portfolio";
+import Profile from "./pages/Profile";
 
 /* ── Compact & Direct Landing Page ────────────────────────────────────────── */
 function LandingPage({ onNavigate }) {
@@ -69,6 +70,7 @@ function AppShell() {
         {page === "leaderboard" && <Leaderboard standalone={true} />}
         {page === "squad" && <SquadPage />}
         {page === "portfolio" && <Portfolio />}
+        {page === "profile" && <Profile onNavigate={navigate} />}
       </div>
 
       <Footer onOpenLegal={(t) => setLegalTopic(t)} />

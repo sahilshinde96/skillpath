@@ -43,6 +43,17 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
+        # Allow authentication via either username or email address (case-insensitive)
+        login_input = attrs.get(self.username_field, "").strip()
+        if login_input:
+            user_by_email = User.objects.filter(email__iexact=login_input).first()
+            if user_by_email:
+                attrs[self.username_field] = user_by_email.username
+            else:
+                user_by_username = User.objects.filter(username__iexact=login_input).first()
+                if user_by_username:
+                    attrs[self.username_field] = user_by_username.username
+
         data = super().validate(attrs)
         data["user"] = {
             "id": self.user.id,
