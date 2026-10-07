@@ -10,6 +10,9 @@ Handles:
 """
 
 import uuid
+import random
+from datetime import timedelta
+from django.utils import timezone
 from django.conf import settings
 from django.contrib.auth.models import User
 from rest_framework import status, generics, permissions
@@ -20,6 +23,8 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 from .serializers import RegisterSerializer, UserSerializer, CustomTokenObtainPairSerializer
+from .models import PhoneOTP, UserProfile
+from .blacksms import clean_phone_number, send_blacksms_otp
 
 
 # ── 1. Custom JWT Login View ────────────────────────────────────────────────
@@ -222,3 +227,156 @@ class GoogleAuthView(APIView):
                 {"error": f"Google authentication failed: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+
+# ── 5. SMS Authentication Views (BlackSMS Infrastructure) ───────────────────
+class SendSmsOtpView(APIView):
+    """
+    Endpoint: POST /api/auth/sms/send-otp/
+    Accepts: { "phone": "9876543210" }
+    Generates a 6-digit OTP, stores PhoneOTP record (5 min expiry),
+    and sends via BlackSMS REST API.
+    """
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        raw_phone = request.data.get("phone", "")
+        clean_phone = clean_phone_number(raw_phone)
+
+        if not clean_phone or len(clean_phone) < 10:
+            return Response(
+                {"error": "Please enter a valid 10-digit mobile number."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Anti-spam cooldown: Check if an unverified OTP was generated < 45s ago
+        recent_otp = PhoneOTP.objects.filter(
+            phone=clean_phone,
+            created_at__gte=timezone.now() - timedelta(seconds=45),
+            is_verified=False
+        ).first()
+
+        if recent_otp:
+            return Response(
+                {"error": "Please wait 45 seconds before requesting another SMS code."},
+                status=status.HTTP_429_TOO_MANY_REQUESTS
+            )
+
+        # Generate 6-digit cryptographic random OTP
+        otp_code = f"{random.randint(100000, 999999):06d}"
+        expires_at = timezone.now() + timedelta(minutes=5)
+
+        PhoneOTP.objects.create(
+            phone=clean_phone,
+            otp_code=otp_code,
+            expires_at=expires_at,
+        )
+
+        # Dispatch via BlackSMS API
+        sms_result = send_blacksms_otp(clean_phone, otp_code)
+
+        if not sms_result.get("success"):
+            return Response(
+                {"error": sms_result.get("error", "Failed to dispatch SMS through BlackSMS gateway.")},
+                status=status.HTTP_502_BAD_GATEWAY
+            )
+
+        resp_data = {
+            "success": True,
+            "message": f"Verification code sent to +91 ******{clean_phone[-4:]}.",
+            "phone": clean_phone,
+        }
+        # In debug / development mode, return dev_otp for developer testing convenience
+        if sms_result.get("mode") == "development" or settings.DEBUG:
+            resp_data["dev_otp"] = otp_code
+            resp_data["mode"] = sms_result.get("mode", "development")
+
+        return Response(resp_data, status=status.HTTP_200_OK)
+
+
+class VerifySmsOtpView(APIView):
+    """
+    Endpoint: POST /api/auth/sms/verify-otp/
+    Accepts: { "phone": "9876543210", "otp": "123456" }
+    Validates the 6-digit OTP, provisions/finds the user, and returns JWT tokens.
+    """
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        raw_phone = request.data.get("phone", "")
+        otp_code = str(request.data.get("otp", "")).strip()
+        clean_phone = clean_phone_number(raw_phone)
+
+        if not clean_phone or not otp_code:
+            return Response(
+                {"error": "Both mobile number and 6-digit OTP code are required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Fetch the most recent active OTP for this phone
+        otp_record = PhoneOTP.objects.filter(
+            phone=clean_phone,
+            is_verified=False,
+            expires_at__gte=timezone.now()
+        ).first()
+
+        if not otp_record:
+            return Response(
+                {"error": "No active verification code found or code expired. Please request a new code."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if otp_record.attempts >= 5:
+            return Response(
+                {"error": "Maximum verification attempts exceeded. Please request a new code."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Verify OTP code
+        if otp_record.otp_code != otp_code:
+            otp_record.attempts += 1
+            otp_record.save(update_fields=["attempts"])
+            remaining = 5 - otp_record.attempts
+            return Response(
+                {"error": f"Invalid verification code. {remaining} attempt(s) remaining."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Mark OTP verified
+        otp_record.is_verified = True
+        otp_record.save(update_fields=["is_verified"])
+
+        # Look up existing user by profile phone, or username, or create new user
+        profile = UserProfile.objects.filter(phone=clean_phone).select_related("user").first()
+        if profile:
+            user = profile.user
+        else:
+            base_username = f"user_{clean_phone}"
+            user = User.objects.filter(username=base_username).first()
+            if not user:
+                user = User.objects.create_user(
+                    username=base_username,
+                    first_name=f"Learner {clean_phone[-4:]}",
+                )
+                user.set_unusable_password()
+                user.save()
+
+            UserProfile.objects.update_or_create(
+                user=user,
+                defaults={"phone": clean_phone}
+            )
+
+        # Generate JWT tokens
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            "user": {
+                "id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "displayName": user.first_name or user.username,
+                "phone": clean_phone,
+            },
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+            "message": "Mobile login successful."
+        }, status=status.HTTP_200_OK)

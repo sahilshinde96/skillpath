@@ -183,3 +183,10 @@ CORS_ALLOW_CREDENTIALS = True
 # ── 10. Google OAuth2 Configuration ─────────────────────────────────────────
 # Used in accounts.views.GoogleAuthView to verify the Google ID token's audience
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
+
+# ── 11. BlackSMS 2FA / OTP Configuration ────────────────────────────────────
+# Infrastructure for mobile SMS OTP authentication via BlackSMS REST API (blacksms.in)
+BLACKSMS_API_KEY = os.getenv("BLACKSMS_API_KEY", "")
+BLACKSMS_API_URL = os.getenv("BLACKSMS_API_URL", "https://blacksms.in/api/v1/bulk-sms")
+BLACKSMS_SENDER_ID = os.getenv("BLACKSMS_SENDER_ID", "")
+BLACKSMS_DLT_TEMPLATE_ID = os.getenv("BLACKSMS_DLT_TEMPLATE_ID", "")
