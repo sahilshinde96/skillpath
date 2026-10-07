@@ -1,79 +1,103 @@
-import React from "react";
+import React, { useState } from "react";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { AuthProvider } from "./context/AuthContext";
 import { ToastProvider } from "./context/ToastContext";
+import { SprintProvider } from "./context/SprintContext";
 import ErrorBoundary from "./components/ErrorBoundary";
-
-// ── New SkillSprint Simulator Components ──────────────────────────────────
 import Navbar from "./components/Navbar";
-import TelemetryBar from "./components/TelemetryBar";
 import Hero from "./components/Hero";
-import HowItWorks from "./components/HowItWorks";
-import SkillRoadmaps from "./components/SkillRoadmaps";
-import PopularCourses from "./components/PopularCourses";
-import EarningPaths from "./components/EarningPaths";
-import StatsStrip from "./components/StatsStrip";
-import FinalCTA from "./components/FinalCTA";
+import FeatureHub from "./components/FeatureHub";
 import Footer from "./components/Footer";
+import AuthModal from "./components/AuthModal";
+import LegalModal from "./components/LegalModal";
+import SearchModal from "./components/SearchModal";
+import Dashboard from "./pages/Dashboard";
+import LessonPlayer from "./pages/LessonPlayer";
+import Leaderboard from "./pages/Leaderboard";
+import SquadPage from "./pages/SquadPage";
+import Portfolio from "./pages/Portfolio";
 
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
-
-function MainContent() {
+/* ── Compact & Direct Landing Page ────────────────────────────────────────── */
+function LandingPage({ onNavigate }) {
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        flexDirection: "column",
-        backgroundColor: "var(--background)",
-      }}
-    >
-      {/* Fixed Navigation */}
-      <Navbar />
+    <main>
+      <Hero
+        onLaunchSimulator={() => onNavigate("lesson")}
+        onOpenDashboard={() => onNavigate("dashboard")}
+      />
+      <FeatureHub onNavigate={onNavigate} />
+    </main>
+  );
+}
 
-      {/* Main Content — offset by navbar height (64px) */}
-      <main style={{ flex: 1, paddingTop: 64 }}>
-        {/* Live Engine Telemetry Bar */}
-        <TelemetryBar />
+/* ── App Shell ────────────────────────────────────────────────────────────── */
+function AppShell() {
+  const [page, setPage] = useState("landing");
+  const [legalTopic, setLegalTopic] = useState(null);
+  const [searchOpen, setSearchOpen] = useState(false);
 
-        {/* 1. Hero: Career Simulator + Career Twin Widget */}
-        <Hero />
+  const navigate = (target) => {
+    setPage(target);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
-        {/* 2. 8-Stage Verification Pipeline */}
-        <HowItWorks />
+  // Full-screen Lesson player
+  if (page === "lesson") {
+    return (
+      <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+        <Navbar onNavigate={navigate} />
+        <LessonPlayer
+          onBack={() => navigate("dashboard")}
+          onComplete={() => navigate("dashboard")}
+        />
+        <AuthModal />
+      </div>
+    );
+  }
 
-        {/* 3. Interactive Skill Graph & DAG Navigator */}
-        <SkillRoadmaps />
+  return (
+    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+      <Navbar
+        onOpenLegal={(t) => setLegalTopic(t)}
+        onOpenSearch={() => setSearchOpen(true)}
+        onNavigate={navigate}
+      />
 
-        {/* 4. Career Simulation Arena */}
-        <PopularCourses />
+      <div style={{ flex: 1 }}>
+        {page === "landing" && <LandingPage onNavigate={navigate} />}
+        {page === "dashboard" && <Dashboard onStartMission={() => navigate("lesson")} />}
+        {page === "leaderboard" && <Leaderboard standalone={true} />}
+        {page === "squad" && <SquadPage />}
+        {page === "portfolio" && <Portfolio />}
+      </div>
 
-        {/* 5. Skill Passport: Cryptographic Proof */}
-        <EarningPaths />
+      <Footer onOpenLegal={(t) => setLegalTopic(t)} />
 
-        {/* 6. Platform Architecture & Comparison Matrix */}
-        <StatsStrip />
-
-        {/* 7. Final Call to Action */}
-        <FinalCTA />
-      </main>
-
-      {/* Editorial Footer */}
-      <Footer />
+      <AuthModal />
+      <LegalModal
+        topic={legalTopic}
+        isOpen={!!legalTopic}
+        onClose={() => setLegalTopic(null)}
+      />
+      <SearchModal isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
     </div>
   );
 }
 
 export default function App() {
+  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || "skillsprint-dev-client-id.apps.googleusercontent.com";
+
   return (
-    <ErrorBoundary>
-      <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-        <ToastProvider>
-          <AuthProvider>
-            <MainContent />
-          </AuthProvider>
-        </ToastProvider>
-      </GoogleOAuthProvider>
-    </ErrorBoundary>
+    <GoogleOAuthProvider clientId={googleClientId}>
+      <AuthProvider>
+        <SprintProvider>
+          <ToastProvider>
+            <ErrorBoundary>
+              <AppShell />
+            </ErrorBoundary>
+          </ToastProvider>
+        </SprintProvider>
+      </AuthProvider>
+    </GoogleOAuthProvider>
   );
 }

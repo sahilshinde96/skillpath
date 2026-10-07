@@ -1,250 +1,179 @@
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { Users, BookOpen, Code2, Award } from "lucide-react";
 
-const layers = [
-  {
-    icon: "terminal",
-    color: "var(--primary)",
-    layer: "LAYER 01",
-    title: "Monaco Client Engine",
-    desc: "Next.js and WebAssembly-backed browser IDE with syntax tree introspection, linting, and local mock testing.",
-  },
-  {
-    icon: "memory",
-    color: "var(--tertiary)",
-    layer: "LAYER 02",
-    title: "Judge0 Sandbox Cluster",
-    desc: "Isolated Docker containers execute code against multi-threaded race condition tests, memory limits, and timeouts.",
-  },
-  {
-    icon: "database",
-    color: "var(--on-surface)",
-    layer: "LAYER 03",
-    title: "Real Postgres Schemas",
-    desc: "Every learner interacts with live, isolated database instances populated with millions of synthetic production records.",
-  },
-  {
-    icon: "lock",
-    color: "var(--primary-dark)",
-    layer: "LAYER 04",
-    title: "Proof Verification Vault",
-    desc: "Outputs are checked for regression vulnerabilities and sealed with SHA-256 hashes for verifiable recruiter review.",
-  },
-];
+// ── U6: Animated Counter Hook ─────────────────────────────────────────────────
+function useCountUp(target, duration = 1800, isVisible = false) {
+  const [count, setCount] = useState(0);
+  const started = useRef(false);
 
-const compareRows = [
-  {
-    dimension: "Learning Medium",
-    traditional: "80+ hours of passive video watching",
-    skillsprint: "100% active code execution & system debugging",
-  },
-  {
-    dimension: "Assessment Method",
-    traditional: "Multiple-choice questions & toy quizzes",
-    skillsprint: "Deterministic test suites, memory benchmarks & chaos drills",
-  },
-  {
-    dimension: "Proof of Capability",
-    traditional: "Unverifiable PDF certificates anyone can screenshot",
-    skillsprint: "Public Skill Passport backed by git commits & SHA hashes",
-  },
-  {
-    dimension: "Career Calibration",
-    traditional: "Generic unstructured curriculum",
-    skillsprint: "Personalized DAG roadmap targeting verified hiring bars",
-  },
-];
+  useEffect(() => {
+    if (!isVisible || started.current) return;
+    started.current = true;
 
-export default function StatsStrip() {
+    // Parse the numeric part from strings like "42,000+", "94%", "65+"
+    const numericStr = target.replace(/[^0-9]/g, "");
+    const end = parseInt(numericStr, 10);
+    if (isNaN(end)) return;
+
+    const startTime = performance.now();
+    const step = (now) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      // Ease-out cubic
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setCount(Math.round(eased * end));
+      if (progress < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }, [isVisible, target, duration]);
+
+  // Format the count to match the original format
+  if (!isVisible || !started.current) return "0";
+  const numericStr = target.replace(/[^0-9]/g, "");
+  const end = parseInt(numericStr, 10);
+  if (isNaN(end)) return target;
+  const formatted = count.toLocaleString();
+  return target.replace(numericStr, formatted);
+}
+
+function AnimatedStat({ icon: Icon, value, label, description, isVisible }) {
+  const displayValue = useCountUp(value, 1800, isVisible);
+
   return (
-    <section
-      id="project-lab"
+    <div
       style={{
-        width: "100%",
-        background: "var(--surface)",
-        padding: "64px 0",
-        borderBottom: "1px solid var(--outline-variant)",
+        display: "flex",
+        alignItems: "flex-start",
+        gap: "16px",
+        padding: "12px",
       }}
     >
       <div
-        className="ss-container"
-        style={{ display: "flex", flexDirection: "column", gap: 40 }}
+        style={{
+          width: "44px",
+          height: "44px",
+          borderRadius: "10px",
+          backgroundColor: "var(--bg-surface)",
+          border: "1px solid var(--border)",
+          color: "var(--primary)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexShrink: 0,
+          boxShadow: "var(--shadow-xs)",
+        }}
       >
-        {/* Section Header */}
+        <Icon size={22} />
+      </div>
+
+      <div>
         <div
           style={{
-            textAlign: "center",
-            maxWidth: 600,
-            margin: "0 auto",
-            display: "flex",
-            flexDirection: "column",
-            gap: 8,
+            fontFamily: "var(--font-heading)",
+            fontSize: "1.75rem",
+            fontWeight: 800,
+            color: "var(--text-primary)",
+            lineHeight: 1.1,
+            letterSpacing: "-0.02em",
+            marginBottom: "4px",
+            transition: "all 0.1s ease",
           }}
         >
-          <span className="eyebrow" style={{ textAlign: "center" }}>Technical Authenticity</span>
-          <h2
-            style={{
-              fontFamily: "var(--font-headline)",
-              fontSize: "clamp(1.5rem, 3vw, 1.875rem)",
-              fontWeight: 700,
-              color: "var(--on-surface)",
-            }}
-          >
-            Architected for Extreme Engineering Rigor
-          </h2>
-          <p
-            style={{
-              fontFamily: "var(--font-body)",
-              fontSize: "0.875rem",
-              color: "var(--on-surface-variant)",
-              lineHeight: 1.65,
-            }}
-          >
-            SkillSprint is not a video platform with quiz cards. It is an end-to-end cloud
-            workstation configured for deterministic capability verification.
-          </p>
+          {displayValue}
         </div>
+        <div
+          style={{
+            fontFamily: "var(--font-heading)",
+            fontSize: "0.92rem",
+            fontWeight: 700,
+            color: "var(--text-primary)",
+            marginBottom: "2px",
+          }}
+        >
+          {label}
+        </div>
+        <div style={{ fontSize: "0.8rem", color: "var(--text-muted)", lineHeight: 1.4 }}>
+          {description}
+        </div>
+      </div>
+    </div>
+  );
+}
 
-        {/* Architecture Layers */}
+export default function StatsStrip() {
+  const [isVisible, setIsVisible] = useState(false);
+  const ref = useRef(null);
+
+  const stats = [
+    {
+      icon: Users,
+      value: "4,218+",
+      label: "Active Squads",
+      description: "Study groups learning together right now",
+    },
+    {
+      icon: Code2,
+      value: "12,847+",
+      label: "Missions Completed Today",
+      description: "Across all tracks and sprints globally",
+    },
+    {
+      icon: Award,
+      value: "18+",
+      label: "Avg Score Gain/Sprint",
+      description: "Career Readiness Score points per 14-day sprint",
+    },
+    {
+      icon: BookOpen,
+      value: "91%",
+      label: "Streak Retention",
+      description: "Learners who keep their streak past day 7",
+    },
+  ];
+
+  // U6: Intersection Observer to trigger animation on scroll
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.25 }
+    );
+
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <section
+      ref={ref}
+      style={{
+        backgroundColor: "var(--bg-subtle)",
+        borderBottom: "1px solid var(--border)",
+        padding: "36px 0",
+      }}
+    >
+      <div className="container">
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
-            gap: 16,
+            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+            gap: "24px",
           }}
         >
-          {layers.map((layer) => (
-            <div
-              key={layer.layer}
-              style={{
-                background: "var(--surface-subtle)",
-                border: "1px solid var(--outline-variant)",
-                borderRadius: 8,
-                padding: 16,
-                display: "flex",
-                flexDirection: "column",
-                gap: 10,
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                }}
-              >
-                <span
-                  className="material-symbols-outlined"
-                  style={{ fontSize: 22, color: layer.color }}
-                >
-                  {layer.icon}
-                </span>
-                <span
-                  style={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: "0.6875rem",
-                    fontWeight: 700,
-                    color: "var(--outline)",
-                  }}
-                >
-                  {layer.layer}
-                </span>
-              </div>
-              <h4
-                style={{
-                  fontFamily: "var(--font-headline)",
-                  fontSize: "0.9375rem",
-                  fontWeight: 600,
-                  color: "var(--on-surface)",
-                }}
-              >
-                {layer.title}
-              </h4>
-              <p
-                style={{
-                  fontFamily: "var(--font-body)",
-                  fontSize: "0.6875rem",
-                  color: "var(--on-surface-variant)",
-                  lineHeight: 1.65,
-                }}
-              >
-                {layer.desc}
-              </p>
-            </div>
+          {stats.map((stat) => (
+            <AnimatedStat
+              key={stat.label}
+              icon={stat.icon}
+              value={stat.value}
+              label={stat.label}
+              description={stat.description}
+              isVisible={isVisible}
+            />
           ))}
-        </div>
-
-        {/* Comparison Table */}
-        <div
-          style={{
-            background: "var(--surface)",
-            border: "1px solid var(--outline-variant)",
-            borderRadius: 8,
-            padding: 24,
-            boxShadow: "var(--shadow-sm)",
-            display: "flex",
-            flexDirection: "column",
-            gap: 16,
-          }}
-        >
-          <h3
-            style={{
-              fontFamily: "var(--font-headline)",
-              fontSize: "1.125rem",
-              fontWeight: 700,
-              color: "var(--on-surface)",
-            }}
-          >
-            Operational Comparison: Video Tutorials vs Digital Simulation
-          </h3>
-
-          <div style={{ overflowX: "auto" }}>
-            <table className="compare-table">
-              <thead>
-                <tr>
-                  <th>Evaluation Dimension</th>
-                  <th>Traditional Tutorial Platforms</th>
-                  <th style={{ color: "var(--primary)", fontWeight: 700 }}>
-                    SkillSprint Simulator
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {compareRows.map(({ dimension, traditional, skillsprint }) => (
-                  <tr key={dimension}>
-                    <td
-                      style={{
-                        fontWeight: 600,
-                        color: "var(--on-surface)",
-                        fontFamily: "var(--font-body)",
-                        fontSize: "0.75rem",
-                      }}
-                    >
-                      {dimension}
-                    </td>
-                    <td
-                      style={{
-                        color: "var(--on-surface-variant)",
-                        fontFamily: "var(--font-body)",
-                        fontSize: "0.75rem",
-                      }}
-                    >
-                      {traditional}
-                    </td>
-                    <td
-                      style={{
-                        color: "var(--tertiary)",
-                        fontWeight: 600,
-                        fontFamily: "var(--font-body)",
-                        fontSize: "0.75rem",
-                      }}
-                    >
-                      {skillsprint}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
         </div>
       </div>
     </section>

@@ -102,6 +102,41 @@ class GoogleAuthView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+        # In development mode (DEBUG=True), allow simulated Google credentials for instant local testing
+        if settings.DEBUG and (credential.startswith("mock_") or credential.startswith("dev_") or credential.startswith("demo_")):
+            email = request.data.get("email") or "google.learner@skillsprint.online"
+            name = request.data.get("name") or "Google Verified Learner"
+            email = email.lower().strip()
+
+            user = User.objects.filter(email__iexact=email).first()
+            if not user:
+                base_username = email.split("@")[0].replace(".", "_")[:20]
+                unique_suffix = str(uuid.uuid4())[:6]
+                username = f"{base_username}_{unique_suffix}"
+                user = User.objects.create_user(
+                    username=username,
+                    email=email,
+                    first_name=name,
+                )
+                user.set_unusable_password()
+                user.save()
+            elif not user.first_name and name:
+                user.first_name = name
+                user.save()
+
+            refresh = RefreshToken.for_user(user)
+            return Response({
+                "user": {
+                    "id": user.id,
+                    "username": user.username,
+                    "email": user.email,
+                    "displayName": user.first_name or user.username,
+                },
+                "access": str(refresh.access_token),
+                "refresh": str(refresh),
+                "message": "Google authentication successful."
+            }, status=status.HTTP_200_OK)
+
         try:
             # Verify ID token using Google public certificates
             client_id = getattr(settings, "GOOGLE_CLIENT_ID", "") or None

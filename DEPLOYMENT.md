@@ -78,13 +78,10 @@ Click **Deploy**. Vercel auto-deploys on every push to `main`.
 
 ## Google OAuth Setup
 
-1. Go to [Google Cloud Console Credentials](https://console.cloud.google.com/apis/credentials)
-2. Create or select your project
-3. Go to **OAuth consent screen** → Set to **External**
-4. Go to **Credentials** → **Create Credentials** → **OAuth Client ID**
-5. Application type: **Web application**
-6. Add **Authorized JavaScript origins**:
-   - `http://localhost:5173`
-   - `https://www.skillsprint.online`
-   - `https://skillsprint.online`
-7. Copy the **Client ID** and set it as `GOOGLE_CLIENT_ID` (Render) and `VITE_GOOGLE_CLIENT_ID` (Vercel)
+
+
+
+
+
+
+

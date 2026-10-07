@@ -1,86 +1,69 @@
 import React from "react";
+import { ArrowRight } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 
 export default function FinalCTA() {
-  return (
-    <section
-      id="assessment-arena"
-      style={{
-        width: "100%",
-        padding: "64px 0",
-        background: "var(--surface-subtle)",
-      }}
-    >
-      <div className="ss-container">
-        <div
-          style={{
-            background: "var(--surface)",
-            border: "1px solid var(--outline-variant)",
-            borderRadius: 12,
-            padding: "48px 40px",
-            display: "flex",
-            flexWrap: "wrap",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 32,
-            boxShadow: "var(--shadow-sm)",
-          }}
-        >
-          {/* Text */}
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 10,
-              maxWidth: 580,
-            }}
-          >
-            <span className="eyebrow">Ready for Truth in Engineering?</span>
-            <h2
-              style={{
-                fontFamily: "var(--font-headline)",
-                fontSize: "clamp(1.5rem, 3.5vw, 2.25rem)",
-                fontWeight: 700,
-                color: "var(--on-surface)",
-                lineHeight: 1.25,
-              }}
-            >
-              Run Your Baseline Simulation Now
-            </h2>
-            <p
-              style={{
-                fontFamily: "var(--font-body)",
-                fontSize: "0.9375rem",
-                color: "var(--on-surface-variant)",
-                lineHeight: 1.7,
-              }}
-            >
-              Take 15 minutes to run our live diagnostics. Receive your calibrated
-              readiness score, identify your top 3 system gaps, and start your first
-              sprint.
-            </p>
-          </div>
+  const { openAuthModal, isLoggedIn } = useAuth();
 
-          {/* CTAs */}
-          <div
+  return (
+    <section style={{ padding: "80px 0" }}>
+      <div className="container">
+        <div style={{
+          backgroundColor: "var(--bg-contrast)",
+          borderRadius: "var(--radius-lg)",
+          padding: "64px 48px",
+          textAlign: "center",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+        }} className="cta-card">
+          <h2 style={{
+            fontSize: "1.875rem",
+            fontWeight: 700,
+            color: "var(--text-inverse)",
+            marginBottom: "12px",
+            letterSpacing: "-0.02em",
+            maxWidth: "480px",
+          }}>
+            Start building your portfolio today
+          </h2>
+
+          <p style={{
+            fontSize: "1.0625rem",
+            color: "#a1a1aa",
+            marginBottom: "32px",
+            maxWidth: "440px",
+            lineHeight: 1.65,
+          }}>
+            Pick a career track, complete your first mission, and ship real code — all in about 20 minutes.
+          </p>
+
+          <button
+            type="button"
+            onClick={() => openAuthModal(isLoggedIn ? "dashboard" : "register")}
+            className="btn"
             style={{
-              display: "flex",
-              flexWrap: "wrap",
-              alignItems: "center",
-              gap: 12,
+              padding: "12px 28px",
+              fontSize: "0.9375rem",
+              backgroundColor: "#ffffff",
+              color: "var(--bg-contrast)",
+              fontWeight: 700,
             }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#e4e4e7"}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#ffffff"}
           >
-            <a href="#" className="btn-primary" style={{ padding: "12px 24px", fontSize: "0.6875rem" }}>
-              <span className="material-symbols-outlined" style={{ fontSize: 17 }}>
-                play_arrow
-              </span>
-              Start 15-Min Free Assessment
-            </a>
-            <a href="#skill-graph" className="btn-outline" style={{ padding: "12px 20px" }}>
-              Explore All 24 Tracks
-            </a>
-          </div>
+            {isLoggedIn ? "Go to dashboard" : "Get started — it's free"}
+            <ArrowRight size={16} />
+          </button>
         </div>
       </div>
+
+      <style>{`
+        @media (max-width: 768px) {
+          .cta-card { padding: 40px 24px !important; }
+          .cta-card h2 { font-size: 1.5rem !important; }
+        }
+      `}</style>
     </section>
   );
 }

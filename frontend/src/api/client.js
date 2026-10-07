@@ -129,7 +129,7 @@ export const authApi = {
   login: (payload) => apiClient.post("/auth/login/", payload),
   
   // Authenticate via Google OAuth2 ID token
-  googleLogin: (credential) => apiClient.post("/auth/google/", { credential }),
+  googleLogin: (credential, extra = {}) => apiClient.post("/auth/google/", { credential, ...extra }),
   
   // Fetch currently authenticated user profile
   getMe: () => apiClient.get("/auth/me/"),

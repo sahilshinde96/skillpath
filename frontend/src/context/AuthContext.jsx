@@ -76,8 +76,8 @@ export const AuthProvider = ({ children }) => {
   // ── 4. Google OAuth2 Sign-In / Registration ───────────────────────────────
   // Receives the verified Google ID token (credential) from Google Identity Services,
   // forwards it to the Django backend for cryptographic verification, and stores tokens.
-  const loginWithGoogle = async (credential) => {
-    const res = await authApi.googleLogin(credential);
+  const loginWithGoogle = async (credential, extraData = {}) => {
+    const res = await authApi.googleLogin(credential, extraData);
     const { access, refresh, user: userData } = res.data;
     
     tokenStorage.setTokens(access, refresh, userData);
