@@ -79,6 +79,28 @@ class CurrentUserView(APIView):
         serializer = UserSerializer(request.user)
         return Response({"user": serializer.data})
 
+    def patch(self, request):
+        """Update authenticated user's display name or email."""
+        user = request.user
+        display_name = request.data.get("displayName")
+        if display_name is not None:
+            user.first_name = display_name.strip()
+        email = request.data.get("email")
+        if email:
+            email = email.lower().strip()
+            if User.objects.filter(email__iexact=email).exclude(id=user.id).exists():
+                return Response(
+                    {"error": "This email address is already in use by another account."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            user.email = email
+        user.save()
+        serializer = UserSerializer(user)
+        return Response({
+            "user": serializer.data,
+            "message": "Profile updated successfully."
+        }, status=status.HTTP_200_OK)
+
 
 # ── 4. Google OAuth 2.0 Verification View ───────────────────────────────────
 class GoogleAuthView(APIView):
