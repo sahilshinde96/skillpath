@@ -86,14 +86,38 @@ export const AuthProvider = ({ children }) => {
     return userData;
   };
 
-  // ── 5. User Logout ────────────────────────────────────────────────────────
+  // ── 5. Mobile SMS OTP Authentication (BlackSMS) ───────────────────────────
+  const sendSmsOtp = async (phone) => {
+    const res = await authApi.sendSmsOtp({ phone });
+    return res.data;
+  };
+
+  const loginWithSmsOtp = async (phone, otp) => {
+    const res = await authApi.verifySmsOtp({ phone, otp });
+    const { access, refresh, user: userData } = res.data;
+    tokenStorage.setTokens(access, refresh, userData);
+    setUser(userData);
+    setAuthModalOpen(false);
+    return userData;
+  };
+
+  // ── 6. Profile Updates ────────────────────────────────────────────────────
+  const updateProfile = async (data) => {
+    const res = await authApi.updateProfile(data);
+    const updated = res.data.user;
+    tokenStorage.setTokens(null, null, updated);
+    setUser(updated);
+    return updated;
+  };
+
+  // ── 7. User Logout ────────────────────────────────────────────────────────
   // Clears tokens from browser storage and resets state back to guest mode.
   const logout = () => {
     tokenStorage.clear();
     setUser(null);
   };
 
-  // ── 6. Modal Open/Close Triggers ──────────────────────────────────────────
+  // ── 8. Modal Open/Close Triggers ──────────────────────────────────────────
   const openAuthModal = (mode = "login") => {
     setAuthModalMode(mode);
     setAuthModalOpen(true);
@@ -112,6 +136,9 @@ export const AuthProvider = ({ children }) => {
         login,
         register,
         loginWithGoogle,
+        sendSmsOtp,
+        loginWithSmsOtp,
+        updateProfile,
         logout,
         authModalOpen,
         authModalMode,

@@ -4,10 +4,16 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 class UserSerializer(serializers.ModelSerializer):
     displayName = serializers.CharField(source="first_name", required=False, allow_blank=True)
+    phone = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ["id", "username", "email", "displayName", "date_joined"]
+        fields = ["id", "username", "email", "displayName", "phone", "date_joined"]
+
+    def get_phone(self, obj):
+        if hasattr(obj, "profile") and obj.profile.phone:
+            return obj.profile.phone
+        return ""
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -55,10 +61,14 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
                     attrs[self.username_field] = user_by_username.username
 
         data = super().validate(attrs)
+        phone = ""
+        if hasattr(self.user, "profile") and self.user.profile.phone:
+            phone = self.user.profile.phone
         data["user"] = {
             "id": self.user.id,
             "username": self.user.username,
             "email": self.user.email,
             "displayName": self.user.first_name or self.user.username,
+            "phone": phone,
         }
         return data
